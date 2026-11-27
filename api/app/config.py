@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     journal_encryption_key: str = ""
     web_origin: str = "http://localhost:5173"
 
+    # Conversation threads (LangGraph checkpointer). "memory" is for tests only.
+    checkpointer_backend: Literal["postgres", "memory"] = "postgres"
+    langgraph_schema: str = "langgraph"
+
     # Models: provider per tier, model id per tier.
     llm_provider_main: LLMProvider = "mock"
     llm_model_main: str = "claude-sonnet-5-5"

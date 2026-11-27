@@ -74,5 +74,5 @@ check-db: ## Reset local DB from migrations and run RLS tests (needs supabase st
 	supabase db reset
 	$(API) $(UV) run pytest -m db
 
-check-live: ## Tradition evals against real models and voices (costs money; manual only)
-	@echo "check-live: nothing to run until M5 (tradition packs and guide)"
+check-live: ## Evals against real models (costs money; manual only; needs keys in api/.env)
+	$(API) $(UV) run python -m evals.safety --live

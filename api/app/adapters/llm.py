@@ -63,5 +63,14 @@ def get_chat_model(settings: Settings, tier: Literal["main", "fast"]) -> BaseCha
     model = settings.llm_model_main if tier == "main" else settings.llm_model_fast
     if provider == "mock":
         return MockChatModel(model_name=f"mock:{model}")
-    # Real providers need langchain-anthropic / langchain-google-genai (added in M2, with approval).
+    if provider == "anthropic":
+        from langchain_anthropic import ChatAnthropic
+        from pydantic import SecretStr
+
+        return ChatAnthropic(
+            model=model,
+            api_key=SecretStr(settings.anthropic_api_key),
+            max_tokens=1024 if tier == "main" else 256,
+            timeout=60,
+        )
     raise NotImplementedError(f"LLM provider '{provider}' is not wired up yet")

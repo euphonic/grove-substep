@@ -14,7 +14,7 @@ from app.config import Settings
 
 pytestmark = pytest.mark.db
 
-USER_TABLES = ["profiles", "journal_entries", "sessions", "uploads"]
+USER_TABLES = ["profiles", "journal_entries", "sessions", "uploads", "threads"]
 
 
 @pytest.fixture
@@ -53,6 +53,7 @@ def _make_user(conn: psycopg.Connection) -> uuid.UUID:
         "insert into public.uploads (user_id, filename, mime) values (%s, 'a.txt', 'text/plain')",
         (uid,),
     )
+    conn.execute("insert into public.threads (user_id) values (%s)", (uid,))
     return uid
 
 

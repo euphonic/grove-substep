@@ -16,7 +16,12 @@ def settings(tmp_path: object, monkeypatch: pytest.MonkeyPatch) -> Settings:
     for key in list(os.environ):
         if key.startswith(ENV_PREFIXES) or key.endswith("_API_KEY"):
             monkeypatch.delenv(key, raising=False)
-    return Settings(_env_file=None, local_storage_dir=tmp_path, app_env="test")  # type: ignore[call-arg, arg-type]
+    return Settings(  # type: ignore[call-arg]
+        _env_file=None,
+        local_storage_dir=tmp_path,  # type: ignore[arg-type]
+        app_env="test",
+        checkpointer_backend="memory",
+    )
 
 
 @pytest.fixture
@@ -25,3 +30,8 @@ def client(settings: Settings) -> Iterator[TestClient]:
     app.dependency_overrides[get_settings] = lambda: settings
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture
+def anyio_backend() -> str:
+    return "asyncio"

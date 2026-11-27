@@ -96,7 +96,7 @@ A crisis flag ends the turn at `crisis_response`; otherwise the companion either
 
 ## Memory and data model
 
-All state lives in one Supabase Postgres database with pgvector: LangGraph's checkpointer holds conversation threads, LangGraph's `PostgresStore` (with a semantic index) holds per-user memory, and plain app tables hold everything the UI lists. Row-level security restricts every app table to `auth.uid()`.
+All state lives in one Supabase Postgres database with pgvector: LangGraph's checkpointer holds conversation threads (in a private `langgraph` schema that the Supabase REST API cannot reach), LangGraph's `PostgresStore` (with a semantic index) holds per-user memory, and plain app tables hold everything the UI lists. Row-level security restricts every app table to `auth.uid()`.
 
 **LangGraph store namespaces** (per user: `("user", <user_id>, <kind>)`):
 
@@ -115,6 +115,7 @@ All state lives in one Supabase Postgres database with pgvector: LangGraph's che
 | `journal_entries` (the Hold) | `id`, `user_id`, `source` (`chat`/`paste`/`file`/`photo`/`dayone`/`reflection`), `body_encrypted`, `entry_date`, `created_at` |
 | `sessions` | `id`, `user_id`, `thread_id`, `tradition`, `approach`, `minutes`, `intent`, `script`, `audio_keys[]`, `image_key`, `safety_flagged`, `completed_at`, `rating` |
 | `uploads` | `id`, `user_id`, `filename`, `mime`, `status`, `entry_ids[]` |
+| `threads` | `id` (= LangGraph `thread_id`), `user_id`, `safety_flagged`, `created_at`, `last_message_at` (no title: it would hold chat text in plaintext) |
 | `image_library` | `id`, `tradition`, `theme`, `time_of_day`, `storage_key` |
 | `audio_cache` | `hash` (voice + segment text), `storage_key` |
 
@@ -333,7 +334,7 @@ Eight milestones, each small enough for one or two Claude Code sessions and each
 Checklist for Claude Code to tick off:
 
 - [x] 1\. Scaffold
-- [ ] 2\. Companion chat
+- [x] 2\. Companion chat
 - [ ] 3\. Memory
 - [ ] 4\. The Hold
 - [ ] 5\. Meditation script

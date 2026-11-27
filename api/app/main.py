@@ -1,5 +1,7 @@
 """FastAPI entry point."""
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import Depends, FastAPI
@@ -8,11 +10,20 @@ from fastapi.staticfiles import StaticFiles
 
 from app.auth import current_user_id
 from app.config import Settings, get_settings
+from app.routes import chat
+from app.runtime import open_runtime
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
-    app = FastAPI(title="The Grove API")
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        async with open_runtime(settings) as runtime:
+            app.state.runtime = runtime
+            yield
+
+    app = FastAPI(title="The Grove API", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[settings.web_origin],
@@ -28,6 +39,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/me")
     def me(user_id: Annotated[str, Depends(current_user_id)]) -> dict[str, str]:
         return {"user_id": user_id}
+
+    app.include_router(chat.router)
 
     if settings.storage_backend == "local":
         settings.local_storage_dir.mkdir(parents=True, exist_ok=True)
