@@ -33,3 +33,22 @@ describe('createApi', () => {
 		await expect(createApi('bad', f.fetch, 'http://api').me()).rejects.toBeInstanceOf(ApiError);
 	});
 });
+
+describe('putProfile', () => {
+	it('sends JSON with PUT', async () => {
+		const calls: { method?: string; body?: string; headers: Record<string, string> }[] = [];
+		const f = (
+			_input: string,
+			init?: { method?: string; body?: string; headers?: Record<string, string> }
+		) => {
+			calls.push({ method: init?.method, body: init?.body, headers: init?.headers ?? {} });
+			return Promise.resolve(new Response(JSON.stringify({ onboarded: true }), { status: 200 }));
+		};
+		await createApi('tok', f as unknown as typeof fetch, 'http://api').putProfile({
+			default_tradition: 'raja-yoga'
+		});
+		expect(calls[0].method).toBe('PUT');
+		expect(calls[0].headers['Content-Type']).toBe('application/json');
+		expect(JSON.parse(calls[0].body ?? '{}')).toEqual({ default_tradition: 'raja-yoga' });
+	});
+});

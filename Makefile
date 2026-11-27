@@ -6,7 +6,7 @@ UV    := env -u VIRTUAL_ENV uv
 API   := cd api &&
 WEB   := cd web &&
 
-.PHONY: help install env db db-stop db-reset dev api worker web seed \
+.PHONY: help install env db db-stop db-reset dev ports-free api worker web seed \
         lint typecheck test evals check check-db check-live
 
 help:
@@ -31,7 +31,16 @@ db-stop: ## Stop local Supabase
 db-reset: ## Recreate the local database from migrations
 	supabase db reset
 
-dev: db ## Start Supabase, API, worker and web together (Ctrl-C stops all)
+ports-free:
+	@for p in 8000 5173; do \
+	  if lsof -nP -iTCP:$$p -sTCP:LISTEN >/dev/null 2>&1; then \
+	    echo "Port $$p is already in use (an earlier 'make dev' still running?):"; \
+	    lsof -nP -iTCP:$$p -sTCP:LISTEN | tail -n +2; \
+	    echo "Stop that process first."; exit 1; \
+	  fi; \
+	done
+
+dev: ports-free db ## Start Supabase, API, worker and web together (Ctrl-C stops all)
 	@trap 'kill 0' INT TERM EXIT; \
 	  (cd api && $(UV) run fastapi dev app/asgi.py --port 8000) & \
 	  (cd api && $(UV) run python -m app.worker) & \

@@ -41,7 +41,7 @@ def _latest_user_text(messages: Sequence[BaseMessage]) -> str:
     return ""
 
 
-_CRISIS_PATTERNS = [
+CRISIS_PATTERNS = [
     r"\bkill(ing)? my ?self\b",
     r"\bsuicid",
     r"\bend (it all|my life)\b",
@@ -70,7 +70,7 @@ _CONCERN_PATTERNS = [
 
 class RuleGuard:
     def __init__(self) -> None:
-        self._crisis = [re.compile(p, re.IGNORECASE) for p in _CRISIS_PATTERNS]
+        self._crisis = [re.compile(p, re.IGNORECASE) for p in CRISIS_PATTERNS]
         self._concern = [re.compile(p, re.IGNORECASE) for p in _CONCERN_PATTERNS]
 
     async def classify(self, messages: Sequence[BaseMessage]) -> SafetyLabel:

@@ -1,0 +1,5 @@
+# Skill pack metadata. Content, not code: see docs/SPEC.md, Traditions, approaches and skill packs.
+id: mindfulness
+display_name: Mindfulness
+description: Secular, evidence-informed practice. Breath, body scan, noting and rest.
+status: draft   # draft until guide.md, structures.md, avoid.md and evals.md exist (M5/M7)

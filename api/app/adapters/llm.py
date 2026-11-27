@@ -1,12 +1,13 @@
 """Chat model adapter. Mock replies are deterministic so tests and evals are stable."""
 
 import hashlib
+import re
 from collections.abc import Iterator
 from typing import Any, Literal
 
 from langchain_core.callbacks import CallbackManagerForLLMRun
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessage
+from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessage, SystemMessage
 from langchain_core.outputs import ChatGeneration, ChatGenerationChunk, ChatResult
 
 from app.config import Settings
@@ -16,6 +17,19 @@ CANNED_REPLIES = (
     "That sounds like a lot to carry. Would a few quiet minutes help?",
     "I'm here. Take your time.",
 )
+
+
+# So memory is visible offline: if the system prompt carries a MEMORY block with themes,
+# the mock mentions the first one. Real models decide for themselves.
+MEMORY_ECHO = "(Mock reply: I remember you mentioned {} recently.)"
+
+
+def _recalled_theme(messages: list[BaseMessage]) -> str | None:
+    for msg in messages:
+        if isinstance(msg, SystemMessage) and "MEMORY:" in str(msg.content):
+            match = re.search(r"lately:\n- ([^,(\n]+)", str(msg.content))
+            return match.group(1).strip() if match else None
+    return None
 
 
 class MockChatModel(BaseChatModel):
@@ -30,7 +44,9 @@ class MockChatModel(BaseChatModel):
     def _reply(self, messages: list[BaseMessage]) -> str:
         last = str(messages[-1].content) if messages else ""
         idx = int(hashlib.sha256(last.encode()).hexdigest(), 16) % len(CANNED_REPLIES)
-        return CANNED_REPLIES[idx]
+        reply = CANNED_REPLIES[idx]
+        recalled = _recalled_theme(messages)
+        return f"{reply} {MEMORY_ECHO.format(recalled)}" if recalled else reply
 
     def _generate(
         self,

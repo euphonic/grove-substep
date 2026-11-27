@@ -4,6 +4,7 @@ import json
 import logging
 import uuid
 from collections.abc import AsyncIterator
+from datetime import timedelta
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -120,6 +121,13 @@ async def post_message(
             crisis = snapshot.values.get("safety") == "crisis"
             await rt.threads.touch(thread.id, safety_flagged=crisis)
             yield _sse("end", {"crisis": crisis})
+            # Debounced: one summary per thread, after the conversation goes quiet.
+            await rt.jobs.enqueue(
+                "summarize",
+                {"user_id": user_id, "thread_id": str(thread.id)},
+                delay=timedelta(seconds=rt.settings.summarize_delay_seconds),
+                dedupe_key=f"summarize:{thread.id}",
+            )
         except Exception as exc:  # noqa: BLE001
             # Never log message content: only the error type.
             log.error("chat turn failed: %s", type(exc).__name__)

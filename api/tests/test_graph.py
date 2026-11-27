@@ -70,3 +70,28 @@ async def test_history_persists_within_thread() -> None:
         "second",
     ]
     assert len(out["messages"]) == 4
+
+
+async def test_companion_prompt_includes_memory() -> None:
+    from datetime import date
+
+    from langgraph.store.memory import InMemoryStore
+
+    from app.memory.store import merge_themes, update_profile
+    from app.traditions import Pack
+
+    store = InMemoryStore()
+    await update_profile(store, "u", default_tradition="raja-yoga")
+    await merge_themes(store, "u", [("poor sleep", None)], date(2026, 11, 20))
+    spy = SpyModel(calls=[])
+    graph = build_graph(
+        guard=RuleGuard(),
+        companion_model=spy,
+        checkpointer=InMemorySaver(),
+        store=store,
+        packs={"raja-yoga": Pack(id="raja-yoga", display_name="Raja Yoga", description="d")},
+    )
+    await turn(graph, "hello")
+    system = str(spy.calls[0][0].content)
+    assert "Their default tradition: Raja Yoga" in system
+    assert "- poor sleep" in system

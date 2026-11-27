@@ -4,6 +4,7 @@ import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, fetch, url }) => {
 	const api = createApi(locals.session?.access_token ?? null, fetch);
+	if (!(await api.getProfile()).onboarded) redirect(303, '/onboarding');
 	let threadId = url.searchParams.get('thread');
 	if (!threadId) {
 		const threads = await api.listThreads();

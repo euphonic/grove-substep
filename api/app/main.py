@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.auth import current_user_id
 from app.config import Settings, get_settings
-from app.routes import chat
+from app.routes import chat, profile
 from app.runtime import open_runtime
 
 
@@ -41,6 +41,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"user_id": user_id}
 
     app.include_router(chat.router)
+    app.include_router(profile.router)
 
     if settings.storage_backend == "local":
         settings.local_storage_dir.mkdir(parents=True, exist_ok=True)

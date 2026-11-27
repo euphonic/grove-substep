@@ -12,6 +12,21 @@ export type ThreadSummary = { id: string; created_at: string; last_message_at: s
 
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
+export type Tradition = { id: string; display_name: string; description: string };
+
+export type Profile = {
+	display_name: string | null;
+	default_tradition: string | null;
+	timezone: string;
+	onboarded: boolean;
+};
+
+export type ProfileUpdate = {
+	default_tradition: string;
+	display_name?: string | null;
+	timezone?: string;
+};
+
 export class ApiError extends Error {
 	constructor(
 		public status: number,
@@ -33,8 +48,17 @@ export function createApi(
 		return h;
 	}
 
-	async function request<T>(method: 'GET' | 'POST', path: string): Promise<T> {
-		const res = await fetchFn(`${baseUrl}${path}`, { method, headers: headers() });
+	async function request<T>(
+		method: 'GET' | 'POST' | 'PUT',
+		path: string,
+		body?: unknown
+	): Promise<T> {
+		const init: RequestInit = { method, headers: headers() };
+		if (body !== undefined) {
+			init.headers = headers({ 'Content-Type': 'application/json' });
+			init.body = JSON.stringify(body);
+		}
+		const res = await fetchFn(`${baseUrl}${path}`, init);
 		if (!res.ok) throw new ApiError(res.status, `${path} failed: ${res.status}`);
 		return (await res.json()) as T;
 	}
@@ -42,6 +66,9 @@ export function createApi(
 	return {
 		health: () => request<Health>('GET', '/health'),
 		me: () => request<Me>('GET', '/me'),
+		listTraditions: () => request<Tradition[]>('GET', '/traditions'),
+		getProfile: () => request<Profile>('GET', '/profile'),
+		putProfile: (update: ProfileUpdate) => request<Profile>('PUT', '/profile', update),
 		listThreads: () => request<ThreadSummary[]>('GET', '/threads'),
 		createThread: () => request<ThreadSummary>('POST', '/threads'),
 		getMessages: (threadId: string) =>

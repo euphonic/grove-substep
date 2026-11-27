@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     # Conversation threads (LangGraph checkpointer). "memory" is for tests only.
     checkpointer_backend: Literal["postgres", "memory"] = "postgres"
     langgraph_schema: str = "langgraph"
+    # Summarize a conversation this long after its last message (debounced per thread).
+    summarize_delay_seconds: int = 60
 
     # Models: provider per tier, model id per tier.
     llm_provider_main: LLMProvider = "mock"

@@ -115,6 +115,7 @@ All state lives in one Supabase Postgres database with pgvector: LangGraph's che
 | `journal_entries` (the Hold) | `id`, `user_id`, `source` (`chat`/`paste`/`file`/`photo`/`dayone`/`reflection`), `body_encrypted`, `entry_date`, `created_at` |
 | `sessions` | `id`, `user_id`, `thread_id`, `tradition`, `approach`, `minutes`, `intent`, `script`, `audio_keys[]`, `image_key`, `safety_flagged`, `completed_at`, `rating` |
 | `uploads` | `id`, `user_id`, `filename`, `mime`, `status`, `entry_ids[]` |
+| `jobs` | `id`, `kind`, `payload` (ids only, never text), `dedupe_key`, `status`, `attempts`, `run_after`, `last_error` (error type only); server-only, processed by the worker |
 | `threads` | `id` (= LangGraph `thread_id`), `user_id`, `safety_flagged`, `created_at`, `last_message_at` (no title: it would hold chat text in plaintext) |
 | `image_library` | `id`, `tradition`, `theme`, `time_of_day`, `storage_key` |
 | `audio_cache` | `hash` (voice + segment text), `storage_key` |
@@ -335,7 +336,7 @@ Checklist for Claude Code to tick off:
 
 - [x] 1\. Scaffold
 - [x] 2\. Companion chat
-- [ ] 3\. Memory
+- [x] 3\. Memory
 - [ ] 4\. The Hold
 - [ ] 5\. Meditation script
 - [ ] 6\. Audio
