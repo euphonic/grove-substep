@@ -1,0 +1,39 @@
+"""FastAPI entry point."""
+
+from typing import Annotated
+
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+from app.auth import current_user_id
+from app.config import Settings, get_settings
+
+
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or get_settings()
+    app = FastAPI(title="The Grove API")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[settings.web_origin],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @app.get("/health")
+    def health(s: Annotated[Settings, Depends(get_settings)]) -> dict[str, object]:
+        return {"status": "ok", "env": s.app_env, "adapters": s.adapter_modes()}
+
+    @app.get("/me")
+    def me(user_id: Annotated[str, Depends(current_user_id)]) -> dict[str, str]:
+        return {"user_id": user_id}
+
+    if settings.storage_backend == "local":
+        settings.local_storage_dir.mkdir(parents=True, exist_ok=True)
+        app.mount("/media", StaticFiles(directory=settings.local_storage_dir), name="media")
+
+    return app
+
+
+app = create_app()

@@ -1,0 +1,16 @@
+@import 'tailwindcss';
+@import '@fontsource/lato/300.css';
+@import '@fontsource/lato/400.css';
+@import '@fontsource/lato/700.css';
+
+@theme {
+	--font-sans: 'Lato', ui-sans-serif, system-ui, sans-serif;
+	--color-grove-50: #f4f7f2;
+	--color-grove-100: #e3ebdd;
+	--color-grove-700: #3e5a3a;
+	--color-grove-900: #1f2e1d;
+}
+
+html {
+	font-family: var(--font-sans);
+}
