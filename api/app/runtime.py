@@ -7,12 +7,14 @@ from typing import Any
 
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from langgraph.checkpoint.serde.encrypted import EncryptedSerializer
 from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 
 from app.adapters.llm import get_chat_model
 from app.config import Settings
 from app.graph.graph import GroveGraph, build_graph
+from app.memory.keys import CHECKPOINT_KEY_INFO, derive_key
 from app.safety.guard import get_guard
 from app.threads import InMemoryThreadStore, PostgresThreadStore, ThreadStore
 
@@ -49,7 +51,11 @@ async def open_runtime(settings: Settings) -> AsyncIterator[Runtime]:
     await lg_pool.open()
     await app_pool.open()
     try:
-        saver = AsyncPostgresSaver(lg_pool)
+        # Conversation state is encrypted (AES-EAX) before it reaches Postgres.
+        serde = EncryptedSerializer.from_pycryptodome_aes(
+            key=derive_key(settings.journal_encryption_key, CHECKPOINT_KEY_INFO)
+        )
+        saver = AsyncPostgresSaver(lg_pool, serde=serde)
         await saver.setup()
         graph = build_graph(guard=guard, companion_model=companion, checkpointer=saver)
         yield Runtime(graph=graph, threads=PostgresThreadStore(app_pool))

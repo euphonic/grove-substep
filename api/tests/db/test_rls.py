@@ -19,7 +19,7 @@ USER_TABLES = ["profiles", "journal_entries", "sessions", "uploads", "threads"]
 
 @pytest.fixture
 def conn() -> Iterator[psycopg.Connection]:
-    url = Settings(_env_file=None).database_url  # type: ignore[call-arg]
+    url = Settings(_env_file=None, checkpointer_backend="memory").database_url  # type: ignore[call-arg]
     try:
         c = psycopg.connect(url, connect_timeout=3)
     except psycopg.OperationalError:

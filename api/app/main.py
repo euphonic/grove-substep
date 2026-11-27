@@ -47,6 +47,3 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.mount("/media", StaticFiles(directory=settings.local_storage_dir), name="media")
 
     return app
-
-
-app = create_app()

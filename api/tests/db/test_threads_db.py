@@ -1,6 +1,8 @@
 """Conversation persistence against local Supabase (make check-db)."""
 
+import base64
 import json
+import os
 from collections.abc import Iterator
 
 import psycopg
@@ -21,6 +23,7 @@ def db_settings(tmp_path: object) -> Settings:
         local_storage_dir=tmp_path,  # type: ignore[arg-type]
         app_env="test",
         checkpointer_backend="postgres",
+        journal_encryption_key=base64.urlsafe_b64encode(os.urandom(32)).decode(),
     )
 
 
@@ -100,3 +103,42 @@ def test_checkpoints_live_in_private_schema(db_settings: Settings, user_id: str)
                 "select has_schema_privilege(%s, 'langgraph', 'USAGE')", (role,)
             ).fetchone()
             assert ok == (False,), f"{role} must not reach the langgraph schema"
+
+
+def test_checkpoints_are_encrypted_at_rest(db_settings: Settings, user_id: str) -> None:
+    marker = "lantern-orchard-marker"
+    with _client(db_settings, user_id) as c:
+        thread_id = c.post("/threads").json()["id"]
+        _send(c, thread_id, f"My secret word is {marker}.")
+        # Round trip still works through the encrypted serializer.
+        history = c.get(f"/threads/{thread_id}/messages").json()["messages"]
+    assert marker in history[0]["content"]
+
+    with psycopg.connect(db_settings.database_url) as conn:
+        for table in ("checkpoints", "checkpoint_blobs", "checkpoint_writes"):
+            hits = conn.execute(
+                f"select count(*) from langgraph.{table} t where thread_id = %s"  # noqa: S608
+                " and position(%s in encode(convert_to(t::text, 'UTF8'), 'escape')) > 0",
+                (thread_id, marker),
+            ).fetchone()
+            assert hits == (0,), f"plaintext message found in langgraph.{table}"
+        types = {
+            r[0]
+            for r in conn.execute(
+                "select distinct type from langgraph.checkpoint_blobs where thread_id = %s"
+                " and channel = 'messages'",
+                (thread_id,),
+            ).fetchall()
+        }
+    assert types and all(t.endswith("+aes") for t in types), types
+
+
+def test_wrong_key_cannot_read_history(db_settings: Settings, user_id: str) -> None:
+    with _client(db_settings, user_id) as c:
+        thread_id = c.post("/threads").json()["id"]
+        _send(c, thread_id, "hello")
+    other_key = db_settings.model_copy(
+        update={"journal_encryption_key": base64.urlsafe_b64encode(os.urandom(32)).decode()}
+    )
+    with _client(other_key, user_id) as c, pytest.raises(ValueError):
+        c.get(f"/threads/{thread_id}/messages")

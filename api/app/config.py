@@ -73,8 +73,14 @@ class Settings(BaseSettings):
             for name in ("r2_account_id", "r2_access_key_id", "r2_secret_access_key"):
                 if not getattr(self, name):
                     missing.append(name.upper())
+        if self.checkpointer_backend == "postgres" and not self.journal_encryption_key:
+            missing.append("JOURNAL_ENCRYPTION_KEY")
         if missing:
             raise ValueError(f"Missing required settings for selected modes: {', '.join(missing)}")
+        if self.journal_encryption_key:
+            from app.memory.keys import decode_server_key
+
+            decode_server_key(self.journal_encryption_key)
         return self
 
     def adapter_modes(self) -> dict[str, str]:

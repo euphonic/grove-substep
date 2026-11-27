@@ -33,13 +33,13 @@ db-reset: ## Recreate the local database from migrations
 
 dev: db ## Start Supabase, API, worker and web together (Ctrl-C stops all)
 	@trap 'kill 0' INT TERM EXIT; \
-	  (cd api && $(UV) run fastapi dev app/main.py --port 8000) & \
+	  (cd api && $(UV) run fastapi dev app/asgi.py --port 8000) & \
 	  (cd api && $(UV) run python -m app.worker) & \
 	  (cd web && pnpm dev) & \
 	  wait
 
 api: ## Run only the API
-	$(API) $(UV) run fastapi dev app/main.py --port 8000
+	$(API) $(UV) run fastapi dev app/asgi.py --port 8000
 
 worker: ## Run only the worker
 	$(API) $(UV) run python -m app.worker

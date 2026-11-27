@@ -5,11 +5,11 @@ Packs and the guide subgraph arrive in M5; until then the runner reports what it
 
 import sys
 
-from app.config import get_settings
+from app.config import Settings
 
 
 def main() -> int:
-    root = get_settings().traditions_dir
+    root = Settings(checkpointer_backend="memory").traditions_dir
     packs = sorted(p.name for p in root.iterdir() if (p / "pack.yaml").exists())
     if not packs:
         print("tradition evals: 0 packs with pack.yaml (packs arrive in M5)")

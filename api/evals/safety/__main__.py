@@ -17,7 +17,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.checkpoint.memory import InMemorySaver
 
 from app.adapters.llm import get_chat_model
-from app.config import Settings, get_settings
+from app.config import Settings
 from app.graph.graph import build_graph
 from app.graph.state import GroveState
 from app.safety.guard import ModelGuard, RuleGuard, get_guard
@@ -68,7 +68,9 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--live", action="store_true", help="include live-only cases")
     args = parser.parse_args()
-    return asyncio.run(run(get_settings(), args.live))
+    # Evals keep state in memory; they never touch the conversation database.
+    settings = Settings(checkpointer_backend="memory")
+    return asyncio.run(run(settings, args.live))
 
 
 if __name__ == "__main__":

@@ -27,7 +27,7 @@ tradition-specific guided meditation. Full spec: docs/SPEC.md. Read it before la
 ## Commands
 - all: make dev | make check | make check-db | make seed | make env
 - web: pnpm dev | pnpm test | pnpm lint
-- api: uv run fastapi dev | uv run pytest | uv run python -m evals.safety
+- api: uv run fastapi dev app/asgi.py | uv run pytest | uv run python -m evals.safety
 - db: supabase start | supabase db reset
 
 ## Working style
